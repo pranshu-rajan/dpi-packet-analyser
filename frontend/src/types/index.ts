@@ -89,9 +89,13 @@ export interface HexDumpLine {
 
 export interface PacketDetail {
   summary: PacketSummary;
-  layers: Record<string, any>;
+  layers: Record<string, PacketLayer | undefined>;
   hex_dump: HexDumpLine[];
   raw_len: number;
+}
+
+export interface PacketLayer {
+  [key: string]: string | number | undefined;
 }
 
 export interface ChatMessage {

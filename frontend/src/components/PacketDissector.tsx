@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Terminal, ShieldAlert, CheckCircle2, ChevronRight, Copy, Check } from 'lucide-react';
+import { Search, Terminal, ChevronRight, Copy, Check } from 'lucide-react';
 import { PacketSummary, PacketDetail } from '@/types';
 import { getPackets, getPacketDetail } from '@/lib/api';
 
@@ -12,7 +12,7 @@ interface PacketDissectorProps {
 export const PacketDissector: React.FC<PacketDissectorProps> = ({ analysisId }) => {
   const [packets, setPackets] = useState<PacketSummary[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<PacketDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -22,6 +22,19 @@ export const PacketDissector: React.FC<PacketDissectorProps> = ({ analysisId }) 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedHex, setCopiedHex] = useState(false);
+
+  const handleSelectPacket = async (pktId: number) => {
+    setSelectedId(pktId);
+    setDetailLoading(true);
+    try {
+      const data = await getPacketDetail(pktId, analysisId);
+      setDetail(data);
+    } catch (err) {
+      console.error('Failed to load packet detail:', err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   // Fetch packet list
   const fetchPacketList = async () => {
@@ -48,25 +61,15 @@ export const PacketDissector: React.FC<PacketDissectorProps> = ({ analysisId }) 
   };
 
   useEffect(() => {
-    fetchPacketList();
+    const timer = window.setTimeout(() => void fetchPacketList(), 0);
+    return () => window.clearTimeout(timer);
+    // fetchPacketList uses the current filter state for this request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisId, protocolFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchPacketList();
-  };
-
-  const handleSelectPacket = async (pktId: number) => {
-    setSelectedId(pktId);
-    setDetailLoading(true);
-    try {
-      const data = await getPacketDetail(pktId, analysisId);
-      setDetail(data);
-    } catch (err) {
-      console.error('Failed to load packet detail:', err);
-    } finally {
-      setDetailLoading(false);
-    }
   };
 
   const copyHexDump = () => {

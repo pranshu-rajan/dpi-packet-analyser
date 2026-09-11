@@ -9,7 +9,7 @@ import { TrafficAnalytics } from '@/components/TrafficAnalytics';
 import { PacketDissector } from '@/components/PacketDissector';
 import { RuleManagerModal } from '@/components/RuleManagerModal';
 import { AICopilotDrawer } from '@/components/AICopilotDrawer';
-import { Shield, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { Sparkles, AlertCircle, Clock3, FileArchive, ShieldCheck } from 'lucide-react';
 
 export default function Dashboard() {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
@@ -20,10 +20,8 @@ export default function Dashboard() {
   const [copilotOpen, setCopilotOpen] = useState<boolean>(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  // Initial load: run sample capture
-  useEffect(() => {
-    loadSample();
-  }, []);
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
 
   const showNotification = (msg: string) => {
     setActionNotice(msg);
@@ -37,9 +35,9 @@ export default function Dashboard() {
       const data = await analyzeSample(rules);
       setAnalysis(data);
       setRules(data.active_rules || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to analyze sample capture. Ensure FastAPI backend is running on port 8000.');
+      setError(getErrorMessage(err, 'Failed to analyze sample capture. Ensure FastAPI backend is running on port 8000.'));
     } finally {
       setLoading(false);
     }
@@ -53,9 +51,9 @@ export default function Dashboard() {
       setAnalysis(data);
       setRules(data.active_rules || []);
       showNotification(`Uploaded and analyzed ${file.name} successfully!`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to upload and analyze PCAP.');
+      setError(getErrorMessage(err, 'Failed to upload and analyze PCAP.'));
     } finally {
       setLoading(false);
     }
@@ -71,13 +69,21 @@ export default function Dashboard() {
       setRuleModalOpen(false);
       const droppedDelta = data.summary.dropped;
       showNotification(`Firewall rules applied! Dropped ${droppedDelta} matching packet(s). Filtered PCAP updated.`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to apply rules and refilter.');
+      setError(getErrorMessage(err, 'Failed to apply rules and refilter.'));
     } finally {
       setLoading(false);
     }
   };
+
+  // Initial load: run sample capture
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadSample(), 0);
+    return () => window.clearTimeout(timer);
+    // loadSample is intentionally stable for the initial mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleQuickBlockDomain = (domain: string) => {
     const newRule: FilterRule = {
@@ -110,7 +116,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen text-slate-100 flex flex-col font-sans">
       
       {/* Top Navigation */}
       <Navbar
@@ -134,6 +140,31 @@ export default function Dashboard() {
 
       {/* Main Dashboard Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        {analysis && (
+          <section className="rounded-xl border border-slate-800/80 bg-slate-900/60 px-4 py-3 shadow-sm backdrop-blur-md" aria-label="Capture context">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-400">
+                  <FileArchive className="h-3.5 w-3.5" />
+                  <span>Active capture</span>
+                </div>
+                <p className="mt-1 truncate font-mono text-sm text-white" title={analysis.filename}>{analysis.filename}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-xs sm:flex sm:items-center sm:gap-5">
+                <span className="flex items-center gap-1.5 text-slate-400">
+                  <Clock3 className="h-3.5 w-3.5 text-slate-500" />
+                  {new Date(analysis.timestamp).toLocaleString()}
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-400">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  {analysis.active_rules.filter((rule) => rule.enabled).length} active rules
+                </span>
+                <span className="font-mono text-slate-300">ID {analysis.analysis_id.slice(0, 8)}</span>
+              </div>
+            </div>
+          </section>
+        )}
         
         {/* Error Alert */}
         {error && (
@@ -162,7 +193,7 @@ export default function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-800 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>DPI Engine Platform v2.0 • Multi-Threaded Packet Dissection &amp; Containment</span>
           <span className="text-slate-400 font-mono">C++ Core • FastAPI • Next.js • NetCopilot AI</span>

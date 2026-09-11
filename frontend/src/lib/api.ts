@@ -1,9 +1,15 @@
 import { AnalysisResponse, FilterRule, PacketSummary, PacketDetail, ChatMessage } from '@/types';
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const API_KEY = process.env.NEXT_PUBLIC_DPI_API_KEY;
+
+const apiHeaders = (headers: HeadersInit = {}): HeadersInit => ({
+  ...(API_KEY ? { 'X-API-Key': API_KEY } : {}),
+  ...headers,
+});
 
 export async function getStatus() {
-  const res = await fetch(`${API_BASE}/api/analyze/status`);
+  const res = await fetch(`${API_BASE}/api/analyze/status`, { headers: apiHeaders() });
   if (!res.ok) throw new Error('Failed to fetch engine status');
   return res.json();
 }
@@ -16,6 +22,7 @@ export async function analyzeSample(rules?: FilterRule[]): Promise<AnalysisRespo
   const res = await fetch(`${API_BASE}/api/analyze/sample`, {
     method: 'POST',
     body: formData,
+    headers: apiHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Analysis failed' }));
@@ -33,6 +40,7 @@ export async function uploadAndAnalyze(file: File, rules?: FilterRule[]): Promis
   const res = await fetch(`${API_BASE}/api/analyze/upload`, {
     method: 'POST',
     body: formData,
+    headers: apiHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
@@ -49,6 +57,7 @@ export async function refilterCapture(analysisId: string, rules: FilterRule[]): 
   const res = await fetch(`${API_BASE}/api/analyze/refilter`, {
     method: 'POST',
     body: formData,
+    headers: apiHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Refilter failed' }));
@@ -71,7 +80,7 @@ export async function getPackets(params: {
   if (params.protocol && params.protocol !== 'ALL') url.searchParams.set('protocol', params.protocol);
   if (params.search) url.searchParams.set('search', params.search);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: apiHeaders() });
   if (!res.ok) throw new Error('Failed to fetch packet list');
   return res.json();
 }
@@ -80,13 +89,13 @@ export async function getPacketDetail(packetId: number, analysisId?: string): Pr
   const url = new URL(`${API_BASE}/api/packets/${packetId}`);
   if (analysisId) url.searchParams.set('analysis_id', analysisId);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: apiHeaders() });
   if (!res.ok) throw new Error(`Failed to fetch details for packet #${packetId}`);
   return res.json();
 }
 
 export async function getRulePresets(): Promise<FilterRule[]> {
-  const res = await fetch(`${API_BASE}/api/rules/presets`);
+  const res = await fetch(`${API_BASE}/api/rules/presets`, { headers: apiHeaders() });
   if (!res.ok) throw new Error('Failed to fetch rule presets');
   return res.json();
 }
@@ -101,7 +110,7 @@ export async function streamChatResponse(
   try {
     const res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ messages, analysis_id: analysisId }),
     });
 
@@ -150,7 +159,7 @@ export async function streamChatResponse(
       }
     }
     onDone();
-  } catch (err: any) {
-    onError(err.message || 'Stream connection error');
+  } catch (err: unknown) {
+    onError(err instanceof Error ? err.message : 'Stream connection error');
   }
 }

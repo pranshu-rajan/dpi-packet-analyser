@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, Shield, AlertTriangle, ArrowRight, CornerDownLeft, RefreshCw } from 'lucide-react';
+import { Bot, X, Send, Sparkles, Shield, ArrowRight, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatMessage, FilterRule, AnalysisResponse } from '@/types';
@@ -112,7 +112,7 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
       parts.push({
         type: 'rule',
         rule: {
-          id: `rule-ai-${Date.now()}`,
+          id: `rule-ai-${match.index}`,
           type: rType as 'ip' | 'app' | 'domain',
           value: rVal,
           enabled: true,

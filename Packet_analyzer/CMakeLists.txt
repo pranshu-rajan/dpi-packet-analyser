@@ -7,16 +7,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Source files
 set(SOURCES
-    src/main.cpp
+    src/dpi_mt.cpp
     src/pcap_reader.cpp
     src/packet_parser.cpp
+    src/sni_extractor.cpp
+    src/types.cpp
 )
 
 # Header files location
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Create the executable
-add_executable(packet_analyzer ${SOURCES})
+add_executable(dpi_engine ${SOURCES})
+
+find_package(Threads REQUIRED)
+target_link_libraries(dpi_engine PRIVATE Threads::Threads)
 
 # For macOS, we might need to link against system libraries later
 if(APPLE)

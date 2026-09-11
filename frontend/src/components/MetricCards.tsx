@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Layers, HardDrive, ShieldCheck, ShieldAlert, Cpu, AlertTriangle } from 'lucide-react';
+import { Layers, HardDrive, ShieldCheck, Cpu, AlertTriangle } from 'lucide-react';
 import { AnalysisResponse } from '@/types';
 
 interface MetricCardsProps {
@@ -30,8 +30,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ analysis }) => {
   const fwdPct = 100 - dropPct;
 
   const totalDispatched = thread_stats.lbs.reduce((acc, lb) => acc + (lb.dispatched || 0), 0);
-  const totalProcessed = thread_stats.fps.reduce((acc, fp) => acc + (fp.processed || 0), 0);
-
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Shield, Upload, Download, Sliders, Bot, RefreshCw, Activity } from 'lucide-react';
+import { Shield, Upload, Download, Sliders, Bot, RefreshCw } from 'lucide-react';
 import { AnalysisResponse, FilterRule } from '@/types';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   analysis: AnalysisResponse | null;
@@ -41,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         
         {/* Logo & Status */}
         <div className="flex items-center space-x-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/40 text-cyan-400">
             <Shield className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -50,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg tracking-tight text-white font-mono">DPI Engine</span>
+              <span className="font-bold text-lg tracking-tight text-white">DPI Engine</span>
               <span className="rounded-md bg-cyan-950/80 border border-cyan-800 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-400 uppercase tracking-wider">
                 v2.0 MT
               </span>
@@ -130,6 +131,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Bot className="h-3.5 w-3.5 text-cyan-400" />
             <span className="hidden sm:inline">AI Copilot</span>
           </button>
+
+          <ThemeToggle />
 
         </div>
       </div>

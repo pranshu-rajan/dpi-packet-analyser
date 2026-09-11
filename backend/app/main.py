@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-from app.config import CORS_ORIGINS, DPI_ENGINE_PATH, UPLOADS_DIR, OUTPUTS_DIR
+from app.config import CORS_ORIGINS, DPI_API_KEY, DPI_ENGINE_PATH, UPLOADS_DIR, OUTPUTS_DIR
 from app.api import analyze, packets, rules, chat
 
 @asynccontextmanager
@@ -18,13 +19,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    if DPI_API_KEY and request.method != "OPTIONS" and request.url.path.startswith("/api/"):
+        if request.headers.get("x-api-key") != DPI_API_KEY:
+            return JSONResponse(status_code=401, content={"detail": "Missing or invalid API key"})
+    return await call_next(request)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS if CORS_ORIGINS != ["*"] else ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 # Mount API routers
@@ -45,9 +53,10 @@ def root():
 
 @app.get("/health")
 def health_check():
+    engine_ready = DPI_ENGINE_PATH.exists()
     return {
-        "status": "healthy",
-        "engine_ready": DPI_ENGINE_PATH.exists(),
+        "status": "healthy" if engine_ready else "degraded",
+        "engine_ready": engine_ready,
         "engine_path": str(DPI_ENGINE_PATH)
     }
 

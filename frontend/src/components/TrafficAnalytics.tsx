@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Globe, Radio, AlertOctagon, ShieldX, ExternalLink, CheckCircle } from 'lucide-react';
-import { AnalysisResponse, FilterRule } from '@/types';
+import { Globe, Radio, AlertOctagon, CheckCircle } from 'lucide-react';
+import { AnalysisResponse } from '@/types';
 
 interface TrafficAnalyticsProps {
   analysis: AnalysisResponse | null;

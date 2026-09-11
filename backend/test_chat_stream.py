@@ -11,7 +11,7 @@ from app.services.ai_agent import AIAgentService
 from app.services.dpi_runner import DPIRunnerService
 from app.config import SAMPLE_PCAP_PATH
 
-async def test_chat():
+async def _test_chat():
     print("Testing AI Copilot Streaming...")
     # Initialize sample context
     DPIRunnerService.run_engine(input_pcap=SAMPLE_PCAP_PATH, custom_id="test_stream")
@@ -25,5 +25,8 @@ async def test_chat():
     print("\n\n[SUCCESS] AI Streaming Completed. Total chunks received:", len(tokens))
     assert len(tokens) > 0
 
+def test_chat():
+    asyncio.run(_test_chat())
+
 if __name__ == "__main__":
-    asyncio.run(test_chat())
+    test_chat()

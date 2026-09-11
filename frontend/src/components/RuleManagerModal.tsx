@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Sliders, ShieldCheck, ShieldAlert, Sparkles, Check } from 'lucide-react';
+import { X, Plus, Trash2, Sliders, Sparkles, Check } from 'lucide-react';
 import { FilterRule } from '@/types';
 import { getRulePresets } from '@/lib/api';
 

@@ -31,10 +31,11 @@ HOST = os.getenv("HOST", "0.0.0.0")
 
 raw_cors = os.getenv("CORS_ORIGINS", "*")
 if raw_cors == "*":
-    CORS_ORIGINS = ["*"]
+    CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 else:
     CORS_ORIGINS = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
 
+DPI_API_KEY = os.getenv("DPI_API_KEY", "").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")

@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <optional>
+#include <cctype>
 
 #include "pcap_reader.h"
 #include "packet_parser.h"
@@ -117,8 +118,9 @@ public:
     
     void blockApp(const std::string& app) {
         std::lock_guard<std::mutex> lock(mutex_);
+        const auto normalized = normalize(app);
         for (int i = 0; i < static_cast<int>(AppType::APP_COUNT); i++) {
-            if (appTypeToString(static_cast<AppType>(i)) == app) {
+            if (normalize(appTypeToString(static_cast<AppType>(i))) == normalized) {
                 blocked_apps_.insert(static_cast<AppType>(i));
                 std::cout << "[Rules] Blocked app: " << app << "\n";
                 return;
@@ -129,21 +131,31 @@ public:
     
     void blockDomain(const std::string& domain) {
         std::lock_guard<std::mutex> lock(mutex_);
-        blocked_domains_.push_back(domain);
+        blocked_domains_.push_back(normalize(domain));
         std::cout << "[Rules] Blocked domain: " << domain << "\n";
     }
     
-    bool isBlocked(uint32_t src_ip, AppType app, const std::string& sni) const {
+    bool isBlocked(uint32_t src_ip, uint32_t dst_ip, AppType app, const std::string& sni) const {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (blocked_ips_.count(src_ip)) return true;
+        if (blocked_ips_.count(src_ip) || blocked_ips_.count(dst_ip)) return true;
         if (blocked_apps_.count(app)) return true;
+        const auto normalized_sni = normalize(sni);
         for (const auto& dom : blocked_domains_) {
-            if (sni.find(dom) != std::string::npos) return true;
+            if (normalized_sni.find(dom) != std::string::npos) return true;
         }
         return false;
     }
 
 private:
+    static std::string normalize(const std::string& value) {
+        std::string normalized;
+        normalized.reserve(value.size());
+        for (unsigned char ch : value) {
+            normalized.push_back(static_cast<char>(std::tolower(ch)));
+        }
+        return normalized;
+    }
+
     static uint32_t parseIP(const std::string& ip) {
         uint32_t result = 0;
         int octet = 0, shift = 0;
@@ -221,9 +233,12 @@ private:
     std::atomic<uint64_t> processed_{0};
     
     void run() {
-        while (running_) {
+        while (true) {
             auto pkt_opt = input_queue_.pop(100);
-            if (!pkt_opt) continue;
+            if (!pkt_opt) {
+                if (input_queue_.is_shutdown()) break;
+                continue;
+            }
             
             processed_++;
             Packet& pkt = *pkt_opt;
@@ -243,7 +258,7 @@ private:
             
             // Check blocking
             if (!flow.blocked) {
-                flow.blocked = rules_->isBlocked(pkt.tuple.src_ip, flow.app_type, flow.sni);
+                flow.blocked = rules_->isBlocked(pkt.tuple.src_ip, pkt.tuple.dst_ip, flow.app_type, flow.sni);
             }
             
             // Record stats
@@ -334,9 +349,12 @@ private:
     std::atomic<uint64_t> dispatched_{0};
     
     void run() {
-        while (running_) {
+        while (true) {
             auto pkt_opt = input_queue_.pop(100);
-            if (!pkt_opt) continue;
+            if (!pkt_opt) {
+                if (input_queue_.is_shutdown()) break;
+                continue;
+            }
             
             // Hash to select FP
             FiveTupleHash hasher;
@@ -498,9 +516,6 @@ public:
         
         std::cout << "[Reader] Done reading " << pkt_id << " packets\n";
         reader.close();
-        
-        // Wait for queues to drain
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         // Stop all threads
         for (auto& lb : lbs_) lb->stop();
