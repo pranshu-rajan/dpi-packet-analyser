@@ -19,10 +19,12 @@ This guide walks you through deploying the full-stack DPI Engine and NetCopilot 
 1. Push your repository to **GitHub**.
 2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
 3. Import your GitHub repository.
-4. Set the **Root Directory** to `frontend`.
+4. Set the **Root Directory** to `frontend` and enable **Include files outside the root directory** only if your deployment needs repository-level files.
+   - The repository also includes a root `vercel.json` fallback that runs the frontend install and build commands when the project is left at the repository root.
 5. Under **Environment Variables**, add:
    ```env
    NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+   CORS_ORIGINS=https://your-frontend.vercel.app
    ```
    *(Replace with your live FastAPI backend URL from Step 2)*.
 6. Click **Deploy**. Vercel will automatically build and assign a production URL (e.g. `https://deep-packet-inspection.vercel.app`).
