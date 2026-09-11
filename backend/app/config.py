@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -32,8 +33,12 @@ HOST = os.getenv("HOST", "0.0.0.0")
 raw_cors = os.getenv("CORS_ORIGINS", "*")
 if raw_cors == "*":
     CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGIN_REGEX = None
 else:
-    CORS_ORIGINS = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
+    configured_origins = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
+    CORS_ORIGINS = [origin for origin in configured_origins if "*" not in origin]
+    wildcard_origins = [re.escape(origin).replace(r"\*", ".*") for origin in configured_origins if "*" in origin]
+    CORS_ORIGIN_REGEX = f"^({'|'.join(wildcard_origins)})$" if wildcard_origins else None
 
 DPI_API_KEY = os.getenv("DPI_API_KEY", "").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")

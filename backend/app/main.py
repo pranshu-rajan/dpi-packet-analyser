@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-from app.config import CORS_ORIGINS, DPI_API_KEY, DPI_ENGINE_PATH, UPLOADS_DIR, OUTPUTS_DIR
+from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX, DPI_API_KEY, DPI_ENGINE_PATH, UPLOADS_DIR, OUTPUTS_DIR
 from app.api import analyze, packets, rules, chat
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ async def require_api_key(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key"],
