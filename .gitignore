@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+
+# Temporary upload & output files
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/outputs/*
+!backend/outputs/.gitkeep
+
+# Environment variables
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.env
+*.env.local
+
+# Compiled binaries & objects
+*.exe
+*.o
+*.obj
+Packet_analyzer/dpi_engine
+Packet_analyzer/dpi_engine.exe
+Packet_analyzer/output.pcap
+Packet_analyzer/output_*.pcap
+
+# OS generated files
+.DS_Store
+Thumbs.db

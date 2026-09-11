@@ -1,0 +1,41 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+WORKSPACE_DIR = BASE_DIR.parent
+
+PACKET_ANALYZER_DIR = WORKSPACE_DIR / "Packet_analyzer"
+SAMPLE_PCAP_PATH = PACKET_ANALYZER_DIR / "test_dpi.pcap"
+
+UPLOADS_DIR = BASE_DIR / "uploads"
+OUTPUTS_DIR = BASE_DIR / "outputs"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Determine DPI engine executable path
+env_engine_path = os.getenv("DPI_ENGINE_PATH")
+if env_engine_path and Path(env_engine_path).exists():
+    DPI_ENGINE_PATH = Path(env_engine_path)
+else:
+    exe_candidate = PACKET_ANALYZER_DIR / ("dpi_engine.exe" if os.name == "nt" else "dpi_engine")
+    if not exe_candidate.exists():
+        # fallback to looking in base dir
+        exe_candidate = BASE_DIR / ("dpi_engine.exe" if os.name == "nt" else "dpi_engine")
+    DPI_ENGINE_PATH = exe_candidate
+
+PORT = int(os.getenv("PORT", 8000))
+HOST = os.getenv("HOST", "0.0.0.0")
+
+raw_cors = os.getenv("CORS_ORIGINS", "*")
+if raw_cors == "*":
+    CORS_ORIGINS = ["*"]
+else:
+    CORS_ORIGINS = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
