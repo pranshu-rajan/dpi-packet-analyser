@@ -102,3 +102,16 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+export interface CaptureHistoryItem {
+  id: string;
+  filename: string;
+  file_size_bytes: number;
+  total_packets: number;
+  processed_packets: number;
+  dropped_packets: number;
+  duration_ms: number;
+  throughput_mbps: number;
+  status: string;
+  created_at: string;
+}

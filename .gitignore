@@ -44,6 +44,8 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/outputs/*
 !backend/outputs/.gitkeep
+*.db
+backend/*.db
 
 # Environment variables
 .env

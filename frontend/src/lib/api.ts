@@ -1,4 +1,4 @@
-import { AnalysisResponse, FilterRule, PacketSummary, PacketDetail, ChatMessage } from '@/types';
+import { AnalysisResponse, FilterRule, PacketSummary, PacketDetail, ChatMessage, CaptureHistoryItem } from '@/types';
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const API_KEY = process.env.NEXT_PUBLIC_DPI_API_KEY;
@@ -11,6 +11,83 @@ const apiHeaders = (headers: HeadersInit = {}): HeadersInit => ({
 export async function getStatus() {
   const res = await fetch(`${API_BASE}/api/analyze/status`, { headers: apiHeaders() });
   if (!res.ok) throw new Error('Failed to fetch engine status');
+  return res.json();
+}
+
+export async function getDatabaseRules(): Promise<FilterRule[]> {
+  const res = await fetch(`${API_BASE}/api/rules`, { headers: apiHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch rules from database');
+  return res.json();
+}
+
+export async function createDatabaseRule(rule: {
+  type: string;
+  value: string;
+  action?: string;
+  enabled?: boolean;
+  description?: string;
+}): Promise<FilterRule> {
+  const res = await fetch(`${API_BASE}/api/rules`, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(rule),
+  });
+  if (!res.ok) throw new Error('Failed to create rule in database');
+  return res.json();
+}
+
+export async function toggleDatabaseRule(ruleId: string): Promise<FilterRule> {
+  const res = await fetch(`${API_BASE}/api/rules/${ruleId}/toggle`, {
+    method: 'PATCH',
+    headers: apiHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to toggle rule ${ruleId}`);
+  return res.json();
+}
+
+export async function deleteDatabaseRule(ruleId: string): Promise<{ status: string }> {
+  const res = await fetch(`${API_BASE}/api/rules/${ruleId}`, {
+    method: 'DELETE',
+    headers: apiHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete rule ${ruleId}`);
+  return res.json();
+}
+
+export async function bulkSyncDatabaseRules(rules: FilterRule[]): Promise<FilterRule[]> {
+  const res = await fetch(`${API_BASE}/api/rules/bulk`, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(rules),
+  });
+  if (!res.ok) throw new Error('Failed to sync rules to database');
+  return res.json();
+}
+
+export async function getCaptureHistory(): Promise<CaptureHistoryItem[]> {
+  const res = await fetch(`${API_BASE}/api/analyze/history`, { headers: apiHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch capture history from database');
+  return res.json();
+}
+
+export async function getCaptureSession(analysisId: string): Promise<AnalysisResponse> {
+  const res = await fetch(`${API_BASE}/api/analyze/session/${analysisId}`, { headers: apiHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch capture session ${analysisId}`);
+  return res.json();
+}
+
+export async function deleteCaptureSession(analysisId: string): Promise<{ status: string }> {
+  const res = await fetch(`${API_BASE}/api/analyze/session/${analysisId}`, {
+    method: 'DELETE',
+    headers: apiHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete capture session ${analysisId}`);
+  return res.json();
+}
+
+export async function getChatHistory(analysisId: string): Promise<ChatMessage[]> {
+  const res = await fetch(`${API_BASE}/api/chat/history/${analysisId}`, { headers: apiHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch chat history');
   return res.json();
 }
 

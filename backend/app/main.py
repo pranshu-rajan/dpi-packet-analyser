@@ -4,12 +4,17 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX, DPI_API_KEY, DPI_ENGINE_PATH, UPLOADS_DIR, OUTPUTS_DIR
+from app.database import init_db
 from app.api import analyze, packets, rules, chat
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        init_db()
+    except Exception as e:
+        print(f"Warning: Database initialization error: {e}")
     yield
 
 app = FastAPI(

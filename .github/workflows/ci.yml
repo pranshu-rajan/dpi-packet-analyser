@@ -45,6 +45,7 @@ jobs:
       run: |
         python backend/test_backend.py
         python backend/test_chat_stream.py
+        python backend/test_e2e_verification.py
 
     - name: Set up Node.js 20
       uses: actions/setup-node@v4

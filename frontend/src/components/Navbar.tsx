@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Shield, Upload, Download, Sliders, Bot, RefreshCw } from 'lucide-react';
+import { Shield, Upload, Download, Sliders, Bot, RefreshCw, Database } from 'lucide-react';
 import { AnalysisResponse, FilterRule } from '@/types';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -12,6 +12,7 @@ interface NavbarProps {
   onLoadSample: () => void;
   onFileUpload: (file: File) => void;
   onOpenRules: () => void;
+  onOpenHistory: () => void;
   onToggleCopilot: () => void;
   copilotOpen: boolean;
 }
@@ -23,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLoadSample,
   onFileUpload,
   onOpenRules,
+  onOpenHistory,
   onToggleCopilot,
   copilotOpen,
 }) => {
@@ -104,6 +106,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden sm:inline">Export Filtered PCAP</span>
             </a>
           )}
+
+          {/* History / Database Button */}
+          <button
+            onClick={onOpenHistory}
+            className="flex items-center space-x-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-purple-300 transition-colors hover:border-purple-800/80 hover:bg-purple-950/40"
+            title="View historical network captures stored in PostgreSQL"
+          >
+            <Database className="h-3.5 w-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Telemetry History</span>
+          </button>
 
           {/* Firewall Rules Drawer Button */}
           <button

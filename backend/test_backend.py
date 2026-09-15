@@ -58,7 +58,47 @@ def run_tests():
     print(f"Packet #1 Hex Dump Lines: {len(detail.hex_dump)}")
     print(f"Sample Hex Line: {detail.hex_dump[0].offset}  {detail.hex_dump[0].hex}  {detail.hex_dump[0].ascii}")
 
-    print("\n[SUCCESS] All Backend Core Services Tested Successfully!")
+    print("\n--- 5. Testing Database Integration & CRUD ---")
+    from app.database import SessionLocal, init_db
+    from app.models.db_models import FirewallRuleModel, CaptureRecord
+    from app.api.rules import get_all_rules, create_rule, toggle_rule, delete_rule
+    from app.api.analyze import persist_analysis_to_db, get_capture_history
+    from app.models.schemas import CreateRuleRequest
+
+    init_db()
+    db = SessionLocal()
+    
+    # 5.1 Test Rule CRUD
+    rules_in_db = get_all_rules(db=db)
+    print(f"Total Rules in Database: {len(rules_in_db)}")
+    assert len(rules_in_db) >= 6
+
+    # Create new rule
+    new_rule = create_rule(
+        CreateRuleRequest(type="ip", value="10.20.30.40", action="drop", enabled=True, description="Test rule"),
+        db=db
+    )
+    print(f"Created rule: {new_rule.id} ({new_rule.value})")
+    assert new_rule.value == "10.20.30.40"
+
+    # Toggle rule
+    toggled = toggle_rule(new_rule.id, db=db)
+    print(f"Toggled rule status: {toggled.enabled}")
+    assert toggled.enabled is False
+
+    # Delete rule
+    del_res = delete_rule(new_rule.id, db=db)
+    print(f"Deleted rule: {del_res}")
+
+    # 5.2 Test Capture Persistence
+    persist_analysis_to_db(response, db=db)
+    history = get_capture_history(db=db)
+    print(f"Capture History in Database: {len(history)} record(s)")
+    assert len(history) >= 1
+    assert history[0].total_packets == 77
+    db.close()
+
+    print("\n[SUCCESS] All Backend Core Services & Database Integration Tested Successfully!")
 
 if __name__ == "__main__":
     run_tests()

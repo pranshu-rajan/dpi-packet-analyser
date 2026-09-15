@@ -93,3 +93,22 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     analysis_id: Optional[str] = None
+
+class CaptureHistoryItem(BaseModel):
+    id: str
+    filename: str
+    file_size_bytes: int
+    total_packets: int
+    processed_packets: int
+    dropped_packets: int
+    duration_ms: float
+    throughput_mbps: float
+    status: str
+    created_at: str
+
+class CreateRuleRequest(BaseModel):
+    type: str = Field(..., description="Rule type: 'ip', 'app', 'domain', or 'port'")
+    value: str = Field(..., description="Target pattern to match")
+    action: str = Field(default="drop", description="Action: 'drop', 'alert', or 'pass'")
+    enabled: bool = Field(default=True)
+    description: Optional[str] = Field(default="")

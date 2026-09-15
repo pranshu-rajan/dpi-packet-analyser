@@ -45,3 +45,12 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+# Database Configuration (PostgreSQL / Supabase with SQLite fallback)
+raw_db_url = os.getenv("DATABASE_URL", "").strip()
+if not raw_db_url:
+    DATABASE_URL = f"sqlite:///{BASE_DIR / 'dpi.db'}"
+elif raw_db_url.startswith("postgres://"):
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql://", 1)
+else:
+    DATABASE_URL = raw_db_url

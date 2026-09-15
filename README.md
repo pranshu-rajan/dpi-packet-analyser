@@ -5,12 +5,13 @@
 ![C++17](https://img.shields.io/badge/C%2B%2B-17%20Multi--Threaded-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20ORM-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-Deployable-black?style=for-the-badge&logo=vercel&logoColor=white)
 
-An industry-grade, full-stack cybersecurity platform orchestrating a high-performance **C++ multi-threaded Deep Packet Inspection engine** with an interactive **Wireshark-style packet dissector**, **dynamic firewall rule containment**, and a **streaming AI Network Security Copilot** (`NetCopilot`).
+An industry-grade, 3-tier full-stack cybersecurity platform orchestrating a high-performance **C++ multi-threaded Deep Packet Inspection engine** with an interactive **Wireshark-style packet dissector**, a **PostgreSQL/Supabase persistent telemetry & ACL store**, **dynamic firewall rule containment**, and a **streaming AI Network Security Copilot** (`NetCopilot`).
 
 </div>
 
@@ -18,7 +19,7 @@ An industry-grade, full-stack cybersecurity platform orchestrating a high-perfor
 
 ## 🌟 Architecture Overview
 
-The platform preserves the high-performance C++ packet inspection core while wrapping it in modern cloud services:
+The platform operates as a true **3-Tier Distributed Network Telemetry Platform**:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -28,6 +29,7 @@ The platform preserves the high-performance C++ packet inspection core while wra
 │  - Wireshark-Style Deep Packet Dissector (Frame, IPv4, TCP/UDP, TLS SNI) │
 │  - Synchronized Byte & Hex Dump Inspector (Offset, Hex Bytes, ASCII)     │
 │  - Dynamic Firewall Policy Orchestrator (Block IP, App, Domain substring)│
+│  - Persistent Capture Telemetry & Historical Sessions Drawer             │
 │  - NetCopilot AI Streaming Chatbot (SSE real-time streaming)             │
 └─────────────────────────────────────┬────────────────────────────────────┘
                                       │ REST & SSE Streaming
@@ -35,22 +37,22 @@ The platform preserves the high-performance C++ packet inspection core while wra
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                         FASTAPI BACKEND (PYTHON 3.11)                    │
 │  - /api/analyze/upload & /sample (PCAP ingestion & multi-threaded exec)  │
-│  - /api/analyze/refilter (Dynamic firewall policy re-execution)          │
+│  - /api/analyze/history & /session/{id} (Historical capture sessions)    │
+│  - /api/rules (Database-backed CRUD for persistent firewall ACLs)        │
 │  - /api/packets & /api/packets/{id} (Protocol layer tree & hex dump)     │
 │  - /api/analyze/download/{filename} (Filtered PCAP export)               │
-│  - /api/chat/stream (SSE Streaming: Gemini / OpenAI / Offline Fallback)  │
-└─────────────────────────────────────┬────────────────────────────────────┘
-                                      │ Subprocess Execution / IPC
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│              CORE C++ DPI ENGINE (MULTI-THREADED, PRESERVED)             │
-│  - Packet Reader (Ethernet, IPv4, TCP, UDP protocol dissection)          │
-│  - TLS Server Name Indication (SNI) & HTTP Host Extractor                │
-│  - 5-Tuple Connection Tracking (FiveTupleHash, Fast Path queues)         │
-│  - Multi-Core Worker Pool: 2 Load Balancers (LB) + 4 Fast Paths (FP)     │
-│  - Firewall Filtering: Forwarding allowed packets / Dropping blocked     │
-│  - Produces Filtered PCAP Output + JSON Telemetry Report                 │
-└──────────────────────────────────────────────────────────────────────────┘
+│  - /api/chat/stream (SSE Streaming with persistent chat logs)            │
+└──────────────────┬───────────────────────────────────────┬───────────────┘
+                   │ SQLAlchemy 2.0 ORM                    │ Native Subprocess
+                   ▼                                       ▼
+┌──────────────────────────────────────┐ ┌─────────────────────────────────┐
+│   DATABASE TIER (POSTGRESQL 16)      │ │   CORE C++ DPI ENGINE (MT)      │
+│  - captures (Metadata & flow stats)  │ │  - Packet Reader (Ethernet/IP)  │
+│  - firewall_rules (Persistent ACLs)  │ │  - TLS SNI & HTTP Host Parsing  │
+│  - threat_events (Threat logs)       │ │  - 5-Tuple Connection Tracking  │
+│  - chat_messages (Copilot logs)      │ │  - Multi-Core Worker Pool       │
+│  (Supabase / Render / Docker Postgres)│ │  - Firewall Rule Filtering      │
+└──────────────────────────────────────┘ └─────────────────────────────────┘
 ```
 
 ---
@@ -83,6 +85,11 @@ The platform preserves the high-performance C++ packet inspection core while wra
 - **Plaintext Leak Detection**: Detects unencrypted HTTP traffic carrying credentials or session IDs.
 - **High-Risk Application Flagging**: Highlights bandwidth hogs or unauthorized social media in enterprise networks.
 - **0-100 Threat Risk Index**: Continuous scoring based on active traffic composition.
+
+### 5. 🗄️ PostgreSQL Telemetry & ACL Persistence
+- **ACID-Compliant Flow Storage**: Stores historical packet captures, bandwidth throughput (Mbps), protocol distributions, and threat logs in PostgreSQL (via SQLAlchemy 2.0 ORM).
+- **Persistent Access Control Lists (ACLs)**: Dynamic firewall rules remain permanently saved across restarts and browser refreshes with full CRUD endpoints.
+- **Cloud & Docker Ready**: Supports cloud-hosted **Supabase** or **Render PostgreSQL** via connection pooling, with seamless SQLite local fallback for zero-config offline runs.
 
 ---
 
