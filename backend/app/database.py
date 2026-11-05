@@ -10,13 +10,34 @@ if DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
     engine = create_engine(DATABASE_URL, connect_args=connect_args)
 else:
-    # PostgreSQL / Supabase connection pooling
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20
-    )
+    # PostgreSQL / Supabase connection pooling with driver fallback
+    try:
+        engine = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=20
+        )
+    except Exception as e:
+        logger.warning(f"Initial engine creation with {DATABASE_URL} failed ({e}). Attempting fallback driver...")
+        if "postgresql://" in DATABASE_URL and "+psycopg2" not in DATABASE_URL:
+            alt_url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+            engine = create_engine(
+                alt_url,
+                pool_pre_ping=True,
+                pool_size=10,
+                max_overflow=20
+            )
+        elif "postgresql+psycopg://" in DATABASE_URL:
+            alt_url = DATABASE_URL.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+            engine = create_engine(
+                alt_url,
+                pool_pre_ping=True,
+                pool_size=10,
+                max_overflow=20
+            )
+        else:
+            raise
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
