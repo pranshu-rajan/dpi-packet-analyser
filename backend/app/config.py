@@ -3,10 +3,13 @@ import re
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKSPACE_DIR = BASE_DIR.parent
+
+# Load environment variables from root .env or backend/.env
+load_dotenv(WORKSPACE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env")
+load_dotenv()
 
 PACKET_ANALYZER_DIR = WORKSPACE_DIR / "Packet_analyzer"
 SAMPLE_PCAP_PATH = PACKET_ANALYZER_DIR / "test_dpi.pcap"
