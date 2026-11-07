@@ -5,7 +5,7 @@ import { Bot, X, Send, Sparkles, Shield, ArrowRight, RefreshCw } from 'lucide-re
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatMessage, FilterRule, AnalysisResponse } from '@/types';
-import { streamChatResponse } from '@/lib/api';
+import { streamChatResponse, getChatHistory } from '@/lib/api';
 
 interface AICopilotDrawerProps {
   isOpen: boolean;
@@ -21,23 +21,44 @@ const DEFAULT_PROMPTS = [
   'Explain how TLS SNI extraction works without decryption',
 ];
 
+const DEFAULT_GREETING: ChatMessage = {
+  role: 'assistant',
+  content:
+    'Hello! I am **NetCopilot**, your Deep Packet Inspection (DPI) & Network Security AI analyst.\n\n' +
+    'I am analyzing your active capture in real-time. Ask me to investigate TLS SNIs, detect protocol anomalies, or configure firewall containment rules.',
+};
+
 export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
   isOpen,
   onClose,
   analysis,
   onApplySuggestedRule,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content:
-        'Hello! I am **NetCopilot**, your Deep Packet Inspection (DPI) & Network Security AI analyst.\n\n' +
-        'I am analyzing your active capture in real-time. Ask me to investigate TLS SNIs, detect protocol anomalies, or configure firewall containment rules.',
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([DEFAULT_GREETING]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && analysis?.analysis_id) {
+      let active = true;
+      getChatHistory(analysis.analysis_id)
+        .then((history) => {
+          if (!active) return;
+          if (history && history.length > 0) {
+            setMessages(history);
+          } else {
+            setMessages([DEFAULT_GREETING]);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not fetch chat history from DB:', err);
+        });
+      return () => {
+        active = false;
+      };
+    }
+  }, [isOpen, analysis?.analysis_id]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
