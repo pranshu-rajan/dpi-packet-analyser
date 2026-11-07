@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import UPLOADS_DIR, OUTPUTS_DIR, SAMPLE_PCAP_PATH
 from app.database import get_db
+from app.auth import get_optional_user, AuthUser
 from app.models.db_models import CaptureRecord, ThreatEventModel
 from app.models.schemas import AnalysisResponse, FilterRule, CaptureHistoryItem
 from app.services.dpi_runner import DPIRunnerService, ANALYSIS_CACHE
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/api/analyze", tags=["Analysis"])
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
 VALID_PCAP_MAGICS = {0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1}
 
-def persist_analysis_to_db(result: AnalysisResponse, db: Session):
+def persist_analysis_to_db(result: AnalysisResponse, db: Session, user_id: Optional[str] = None):
     """
     Saves or updates network capture telemetry and threat detections into PostgreSQL/Database.
     """
@@ -30,6 +31,7 @@ def persist_analysis_to_db(result: AnalysisResponse, db: Session):
         if not rec:
             rec = CaptureRecord(
                 id=result.analysis_id,
+                user_id=user_id,
                 filename=result.filename,
                 file_size_bytes=result.file_size_bytes,
                 total_packets=result.summary.total_packets,
@@ -42,6 +44,8 @@ def persist_analysis_to_db(result: AnalysisResponse, db: Session):
             )
             db.add(rec)
         else:
+            if user_id and not rec.user_id:
+                rec.user_id = user_id
             rec.total_packets = result.summary.total_packets
             rec.processed_packets = result.summary.forwarded
             rec.dropped_packets = result.summary.dropped
@@ -69,11 +73,23 @@ def get_status():
     return DPIRunnerService.get_engine_status()
 
 @router.get("/history", response_model=List[CaptureHistoryItem])
-def get_capture_history(db: Session = Depends(get_db)):
+def get_capture_history(
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
-    Returns list of all historical packet capture analyses saved in the database.
+    Returns list of historical packet capture analyses scoped to the user or guest.
     """
-    records = db.query(CaptureRecord).order_by(CaptureRecord.created_at.desc()).all()
+    user_id = user.id if (user and hasattr(user, "id")) else None
+    if user_id:
+        # User sees their own captures plus public/guest captures
+        records = db.query(CaptureRecord).filter(
+            (CaptureRecord.user_id == user_id) | (CaptureRecord.user_id == None)
+        ).order_by(CaptureRecord.created_at.desc()).all()
+    else:
+        records = db.query(CaptureRecord).filter(
+            CaptureRecord.user_id == None
+        ).order_by(CaptureRecord.created_at.desc()).all()
     history = []
     for r in records:
         history.append(CaptureHistoryItem(
@@ -147,7 +163,11 @@ def delete_capture_session(analysis_id: str, db: Session = Depends(get_db)):
     return {"status": "success", "deleted_session_id": analysis_id}
 
 @router.post("/sample", response_model=AnalysisResponse)
-async def analyze_sample(rules_json: Optional[str] = Form(None), db: Session = Depends(get_db)):
+async def analyze_sample(
+    rules_json: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
     Executes DPI Engine on the built-in test_dpi.pcap capture.
     """
@@ -169,7 +189,8 @@ async def analyze_sample(rules_json: Optional[str] = Form(None), db: Session = D
             rules=rules,
             custom_id="sample_live"
         )
-        persist_analysis_to_db(result, db)
+        user_id = user.id if (user and hasattr(user, "id")) else None
+        persist_analysis_to_db(result, db, user_id=user_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -178,7 +199,8 @@ async def analyze_sample(rules_json: Optional[str] = Form(None), db: Session = D
 async def upload_and_analyze(
     file: UploadFile = File(...),
     rules_json: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Uploads a custom .pcap / .cap file and executes DPI inspection with size and magic validation.
@@ -228,7 +250,8 @@ async def upload_and_analyze(
             rules=rules,
             custom_id=file_id
         )
-        persist_analysis_to_db(result, db)
+        user_id = user.id if (user and hasattr(user, "id")) else None
+        persist_analysis_to_db(result, db, user_id=user_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -237,7 +260,8 @@ async def upload_and_analyze(
 async def refilter_capture(
     analysis_id: str = Form(...),
     rules_json: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Re-filters an already loaded capture using updated firewall rules.
@@ -266,7 +290,8 @@ async def refilter_capture(
             rules=rules,
             custom_id=analysis_id
         )
-        persist_analysis_to_db(result, db)
+        user_id = user.id if (user and hasattr(user, "id")) else None
+        persist_analysis_to_db(result, db, user_id=user_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

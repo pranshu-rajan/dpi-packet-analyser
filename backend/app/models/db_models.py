@@ -8,6 +8,7 @@ class CaptureRecord(Base):
     __tablename__ = "captures"
 
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(64), nullable=True, index=True)
     filename = Column(String(255), nullable=False)
     file_size_bytes = Column(BigInteger, default=0)
     total_packets = Column(Integer, default=0)
@@ -29,6 +30,7 @@ class FirewallRuleModel(Base):
     __tablename__ = "firewall_rules"
 
     id = Column(String(64), primary_key=True)
+    user_id = Column(String(64), nullable=True, index=True)
     rule_type = Column(String(32), nullable=False) # app, domain, ip, port
     pattern_value = Column(String(255), nullable=False)
     action = Column(String(32), default="drop") # drop, alert, pass
@@ -57,6 +59,7 @@ class ChatMessageModel(Base):
     __tablename__ = "chat_messages"
 
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(64), nullable=True, index=True)
     capture_id = Column(String(64), ForeignKey("captures.id", ondelete="CASCADE"), nullable=True)
     role = Column(String(32), nullable=False) # user, assistant
     content = Column(Text, nullable=False)

@@ -54,12 +54,23 @@ def get_db():
 
 def init_db():
     """
-    Creates all tables if they do not exist and pre-seeds default firewall rules.
+    Creates all tables if they do not exist, runs lightweight migrations, and pre-seeds default firewall rules.
     """
     from app.models.db_models import CaptureRecord, FirewallRuleModel, ThreatEventModel, ChatMessageModel
+    from sqlalchemy import text
 
     Base.metadata.create_all(bind=engine)
     logger.info("Database initialized successfully.")
+
+    # Auto-migration: ensure user_id column exists if table was created previously
+    with engine.connect() as conn:
+        for tbl in ["captures", "firewall_rules", "chat_messages"]:
+            try:
+                conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN user_id VARCHAR(64);"))
+                conn.commit()
+            except Exception:
+                # Column already exists
+                pass
 
     # Seed default rules if empty
     db = SessionLocal()

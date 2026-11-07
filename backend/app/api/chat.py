@@ -1,10 +1,11 @@
 import json
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db, SessionLocal
+from app.auth import get_optional_user, AuthUser
 from app.models.db_models import ChatMessageModel
 from app.models.schemas import ChatRequest, ChatMessage
 from app.services.ai_agent import AIAgentService
@@ -23,11 +24,15 @@ def get_chat_history(analysis_id: str, db: Session = Depends(get_db)):
     return [ChatMessage(role=m.role, content=m.content) for m in messages]
 
 @router.post("/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(
+    request: ChatRequest,
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
     Server-Sent Events (SSE) streaming endpoint for AI Network Copilot with database persistence.
     """
     collected_tokens = []
+    user_id = user.id if (user and hasattr(user, "id")) else None
 
     async def event_generator():
         try:
@@ -44,12 +49,14 @@ async def chat_stream(request: ChatRequest):
                 try:
                     db.add(ChatMessageModel(
                         capture_id=request.analysis_id,
+                        user_id=user_id,
                         role="user",
                         content=last_user_msg.content
                     ))
                     if full_reply:
                         db.add(ChatMessageModel(
                             capture_id=request.analysis_id,
+                            user_id=user_id,
                             role="assistant",
                             content=full_reply
                         ))

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.auth import get_optional_user, AuthUser
 from app.models.db_models import FirewallRuleModel
 from app.models.schemas import FilterRule, CreateRuleRequest
 
@@ -64,16 +65,29 @@ def model_to_schema(m: FirewallRuleModel) -> FilterRule:
     )
 
 @router.get("", response_model=List[FilterRule])
-def get_all_rules(db: Session = Depends(get_db)):
+def get_all_rules(
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
-    Retrieves all persistent firewall rules from the database.
+    Retrieves all persistent firewall rules from the database (user-scoped or global).
     """
-    db_rules = db.query(FirewallRuleModel).order_by(FirewallRuleModel.created_at.asc()).all()
+    user_id = user.id if (user and hasattr(user, "id")) else None
+    if user_id:
+        db_rules = db.query(FirewallRuleModel).filter(
+            (FirewallRuleModel.user_id == user_id) | (FirewallRuleModel.user_id == None)
+        ).order_by(FirewallRuleModel.created_at.asc()).all()
+    else:
+        db_rules = db.query(FirewallRuleModel).filter(
+            FirewallRuleModel.user_id == None
+        ).order_by(FirewallRuleModel.created_at.asc()).all()
+
     if not db_rules:
         # Seed default presets if empty
         for p in DEFAULT_PRESETS:
             r = FirewallRuleModel(
                 id=p.id,
+                user_id=None,
                 rule_type=p.type,
                 pattern_value=p.value,
                 action="drop",
@@ -82,7 +96,7 @@ def get_all_rules(db: Session = Depends(get_db)):
             )
             db.add(r)
         db.commit()
-        db_rules = db.query(FirewallRuleModel).order_by(FirewallRuleModel.created_at.asc()).all()
+        db_rules = db.query(FirewallRuleModel).filter(FirewallRuleModel.user_id == None).order_by(FirewallRuleModel.created_at.asc()).all()
 
     return [model_to_schema(r) for r in db_rules]
 
@@ -94,13 +108,19 @@ def get_rule_presets():
     return DEFAULT_PRESETS
 
 @router.post("", response_model=FilterRule)
-def create_rule(req: CreateRuleRequest, db: Session = Depends(get_db)):
+def create_rule(
+    req: CreateRuleRequest,
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
     Creates and persists a new custom firewall rule.
     """
+    user_id = user.id if (user and hasattr(user, "id")) else None
     rule_id = f"rule-{uuid.uuid4().hex[:8]}"
     db_rule = FirewallRuleModel(
         id=rule_id,
+        user_id=user_id,
         rule_type=req.type,
         pattern_value=req.value,
         action=req.action,
@@ -113,10 +133,15 @@ def create_rule(req: CreateRuleRequest, db: Session = Depends(get_db)):
     return model_to_schema(db_rule)
 
 @router.post("/bulk", response_model=List[FilterRule])
-def bulk_sync_rules(rules: List[FilterRule], db: Session = Depends(get_db)):
+def bulk_sync_rules(
+    rules: List[FilterRule],
+    db: Session = Depends(get_db),
+    user: Optional[AuthUser] = Depends(get_optional_user)
+):
     """
     Synchronizes an entire list of rules from the frontend into the database.
     """
+    user_id = user.id if (user and hasattr(user, "id")) else None
     existing = {r.id: r for r in db.query(FirewallRuleModel).all()}
     
     for rule_data in rules:
@@ -126,9 +151,12 @@ def bulk_sync_rules(rules: List[FilterRule], db: Session = Depends(get_db)):
             m.pattern_value = rule_data.value
             m.is_enabled = rule_data.enabled
             m.description = rule_data.description or ""
+            if user_id and not m.user_id:
+                m.user_id = user_id
         else:
             new_rule = FirewallRuleModel(
                 id=rule_data.id,
+                user_id=user_id,
                 rule_type=rule_data.type,
                 pattern_value=rule_data.value,
                 action="drop",
@@ -138,7 +166,14 @@ def bulk_sync_rules(rules: List[FilterRule], db: Session = Depends(get_db)):
             db.add(new_rule)
             
     db.commit()
-    all_rules = db.query(FirewallRuleModel).order_by(FirewallRuleModel.created_at.asc()).all()
+    if user_id:
+        all_rules = db.query(FirewallRuleModel).filter(
+            (FirewallRuleModel.user_id == user_id) | (FirewallRuleModel.user_id == None)
+        ).order_by(FirewallRuleModel.created_at.asc()).all()
+    else:
+        all_rules = db.query(FirewallRuleModel).filter(
+            FirewallRuleModel.user_id == None
+        ).order_by(FirewallRuleModel.created_at.asc()).all()
     return [model_to_schema(r) for r in all_rules]
 
 @router.patch("/{rule_id}/toggle", response_model=FilterRule)

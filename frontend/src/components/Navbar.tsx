@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Shield, Upload, Download, Sliders, Bot, RefreshCw, Database } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Shield, Upload, Download, Sliders, Bot, RefreshCw, Database, LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import { AnalysisResponse, FilterRule } from '@/types';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/context/AuthContext';
+import { AuthModal } from './AuthModal';
 
 interface NavbarProps {
   analysis: AnalysisResponse | null;
@@ -29,6 +31,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   copilotOpen,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, signOut } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -144,10 +148,44 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">AI Copilot</span>
           </button>
 
+          {/* User Auth Pill / Sign In Button */}
+          {user ? (
+            <div className="flex items-center space-x-1.5 rounded-lg border border-slate-800 bg-slate-900/90 pl-2.5 pr-1.5 py-1 text-xs">
+              <div className="flex items-center space-x-1.5 max-w-[140px] truncate">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                <span className="text-slate-200 font-mono text-[11px] truncate" title={user.email || 'Analyst'}>
+                  {user.email?.split('@')[0] || 'Analyst'}
+                </span>
+              </div>
+              <button
+                onClick={() => signOut()}
+                className="rounded p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                title="Sign Out of Session"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="flex items-center space-x-1.5 rounded-lg border border-cyan-500/40 bg-gradient-to-r from-cyan-950/60 to-blue-950/60 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:brightness-125 transition-all shadow-sm"
+              title="Sign in with Email, Google, or GitHub"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Sign In</span>
+            </button>
+          )}
+
           <ThemeToggle />
 
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </header>
   );
 };

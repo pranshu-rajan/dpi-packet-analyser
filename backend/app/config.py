@@ -44,6 +44,7 @@ else:
     CORS_ORIGIN_REGEX = f"^({'|'.join(wildcard_origins)})$" if wildcard_origins else None
 
 DPI_API_KEY = os.getenv("DPI_API_KEY", "").strip()
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")

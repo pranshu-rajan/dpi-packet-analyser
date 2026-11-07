@@ -3,8 +3,15 @@ import { AnalysisResponse, FilterRule, PacketSummary, PacketDetail, ChatMessage,
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const API_KEY = process.env.NEXT_PUBLIC_DPI_API_KEY;
 
+let activeAuthToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  activeAuthToken = token;
+}
+
 const apiHeaders = (headers: HeadersInit = {}): HeadersInit => ({
   ...(API_KEY ? { 'X-API-Key': API_KEY } : {}),
+  ...(activeAuthToken ? { 'Authorization': `Bearer ${activeAuthToken}` } : {}),
   ...headers,
 });
 
