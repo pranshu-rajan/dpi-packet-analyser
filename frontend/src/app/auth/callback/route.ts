@@ -40,3 +40,4 @@ export async function GET(request: Request) {
   // Return the user to an error page or homepage with instruction
   return NextResponse.redirect(`${origin}/?auth_error=oauth_exchange_failed`);
 }
+

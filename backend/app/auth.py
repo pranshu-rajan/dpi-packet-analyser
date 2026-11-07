@@ -71,3 +71,4 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
